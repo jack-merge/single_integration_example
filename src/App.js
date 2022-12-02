@@ -1,23 +1,51 @@
-import logo from './logo.svg';
 import './App.css';
+import { useCallback, useEffect, useState } from 'react';
+import { fetchIntegrations } from './services/fetchIntegrations';
+import { SingleIntegration } from './components/SingleIntegration';
+import { useMergeLink } from "@mergeapi/react-merge-link";
+import { fetchAccountToken } from './services/fetchAccountToken';
+import { category } from './constants';
 
-function App() {
+const App = () => {
+  const [integrations, setIntegrations] = useState([])
+  const [linkToken, setLinkToken] = useState('')
+
+  useEffect(() => {
+    fetchIntegrations(category)
+      .then(integrations => {
+        setIntegrations(integrations)
+      })
+  }, [])
+
+  useEffect(() => {
+    if (linkToken) { open() }
+  }, [linkToken])
+
+  const onSuccess = useCallback(async (publicToken) => {
+    const response = await fetchAccountToken(publicToken, category)
+    console.log(response.account_token)
+  }, [])
+
+  const { open, isReady } = useMergeLink({
+    linkToken,
+    onSuccess
+  });
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="app">
+      <div className="app-content">
+        {integrations.length > 0 && 
+          integrations.map(details => (
+            <SingleIntegration
+              details={details}
+              category={category}
+              key={details.slug}
+              updateLinkToken={setLinkToken}
+              ready={isReady}
+            />
+          ))
+        }
+      </div>
     </div>
   );
 }
